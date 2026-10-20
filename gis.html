@@ -1,0 +1,612 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIS Asset Monitoring - Demo</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f6fa;
+      color: #243247;
+    }
+
+    header {
+      background: #153b66;
+      color: white;
+      padding: 22px 5%;
+    }
+
+    header h1 {
+      margin: 0 0 7px;
+      font-size: 25px;
+    }
+
+    header p {
+      margin: 0;
+      color: #d7e5f5;
+      font-size: 14px;
+    }
+
+    .container {
+      max-width: 1250px;
+      padding: 24px;
+      margin: auto;
+    }
+
+    .notice {
+      background: #fff7df;
+      border: 1px solid #f2d78c;
+      border-radius: 9px;
+      padding: 12px 15px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #745717;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 22px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 19px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px #23344d0b;
+    }
+
+    .stat-card span {
+      font-size: 13px;
+      color: #6b788a;
+    }
+
+    .stat-card h2 {
+      margin: 10px 0 0;
+      font-size: 29px;
+    }
+
+    .green-text { color: #16834a; }
+    .red-text { color: #d63838; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(260px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 3px 12px #23344d0b;
+    }
+
+    .panel-heading {
+      padding: 17px 19px;
+      border-bottom: 1px solid #e8edf3;
+    }
+
+    .panel-heading h3 {
+      margin: 0 0 6px;
+      font-size: 17px;
+    }
+
+    .panel-heading p {
+      margin: 0;
+      color: #758195;
+      font-size: 12px;
+    }
+
+    /* AREA ILUSTRASI PETA */
+    .map {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1.25 / 1;
+      min-height: 330px;
+      overflow: hidden;
+      background: #e7eddf;
+    }
+
+    .map svg.scene {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-label {
+      position: absolute;
+      z-index: 1;
+      font-size: 11px;
+      color: #62715e;
+      font-weight: bold;
+      pointer-events: none;
+    }
+
+    .map-label.small {
+      font-size: 9px;
+      font-weight: normal;
+      color: #657083;
+    }
+
+    .map-title {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: white;
+      border-radius: 7px;
+      padding: 9px 11px;
+      font-size: 12px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px #00000012;
+      z-index: 2;
+    }
+
+    .marker {
+      position: absolute;
+      z-index: 3;
+      transform: translate(-50%, -50%);
+      width: 31px;
+      height: 31px;
+      border: 3px solid white;
+      border-radius: 50%;
+      color: white;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 7px #00000045;
+      transition: transform .15s;
+    }
+
+    .marker:hover {
+      transform: translate(-50%, -50%) scale(1.18);
+    }
+
+    .marker.normal { background: #20a464; }
+    .marker.problem { background: #e44848; }
+
+    .legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      padding: 14px 18px;
+      border-top: 1px solid #e8edf3;
+      font-size: 12px;
+      color: #586579;
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .asset-list {
+      padding: 10px;
+    }
+
+    .asset {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      text-align: left;
+      padding: 13px 10px;
+      border: 0;
+      border-bottom: 1px solid #edf0f5;
+      background: white;
+      cursor: pointer;
+      border-radius: 7px;
+      color: inherit;
+    }
+
+    .asset:hover, .asset.selected {
+      background: #edf5ff;
+    }
+
+    .asset:last-child {
+      border-bottom: 0;
+    }
+
+    .asset-icon {
+      display: grid;
+      place-items: center;
+      width: 37px;
+      height: 37px;
+      flex-shrink: 0;
+      background: #edf2f8;
+      border-radius: 9px;
+      font-size: 18px;
+    }
+
+    .asset-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .asset-info strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .asset-info small {
+      color: #748094;
+      font-size: 11px;
+    }
+
+    .status {
+      font-size: 10px;
+      font-weight: bold;
+      padding: 5px 7px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .status.normal {
+      color: #147c45;
+      background: #e2f6e9;
+    }
+
+    .status.problem {
+      color: #bd2929;
+      background: #ffebeb;
+    }
+
+    .detail {
+      padding: 17px 19px;
+      border-top: 1px solid #e8edf3;
+      background: #fafcff;
+    }
+
+    .detail h4 {
+      margin: 0 0 13px;
+      font-size: 15px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #edf0f5;
+    }
+
+    .detail-row span:first-child {
+      color: #748094;
+    }
+
+    .detail-row strong {
+      text-align: right;
+    }
+
+    .footer {
+      text-align: center;
+      color: #8a95a5;
+      font-size: 11px;
+      padding: 22px 0 5px;
+    }
+
+    @media (max-width: 760px) {
+      .container { padding: 15px; }
+      .layout { grid-template-columns: 1fr; }
+      .stats { gap: 8px; }
+      .stat-card { padding: 13px; }
+      .stat-card h2 { font-size: 24px; }
+      .stat-card span { font-size: 11px; }
+      .map { min-height: 290px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>GIS Asset Monitoring</h1>
+    <p>Sistem Pemantauan dan Informasi Kondisi Aset</p>
+  </header>
+
+  <main class="container">
+    <div class="notice">
+      <strong>Mode Demo:</strong> Peta ini merupakan ilustrasi wilayah fiktif.
+      Posisi aset hanya untuk simulasi dan bukan koordinat lokasi nyata.
+    </div>
+
+    <section class="stats">
+      <div class="stat-card">
+        <span>Total Aset</span>
+        <h2 id="total">5</h2>
+      </div>
+      <div class="stat-card">
+        <span>Aset Normal</span>
+        <h2 class="green-text" id="normal">3</h2>
+      </div>
+      <div class="stat-card">
+        <span>Perlu Pemeriksaan</span>
+        <h2 class="red-text" id="problem">2</h2>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="panel">
+        <div class="panel-heading">
+          <h3>Visualisasi Wilayah Aset</h3>
+          <p>Klik penanda untuk melihat informasi aset.</p>
+        </div>
+
+        <div class="map" id="map">
+          <div class="map-title">▦ PETA WILAYAH DEMO</div>
+
+          <!-- Ilustrasi wilayah dibuat dengan SVG, tanpa peta online -->
+          <svg class="scene" viewBox="0 0 600 480"
+               preserveAspectRatio="none"
+               xmlns="http://www.w3.org/2000/svg">
+
+            <rect width="600" height="480" fill="#e7eddf"/>
+
+            <!-- Area taman dan ruang terbuka -->
+            <path d="M0 0 H190 L150 100 L30 135 L0 110Z"
+                  fill="#c7e2b8"/>
+            <path d="M420 0 H600 V160 L530 180 L460 115Z"
+                  fill="#c7e2b8"/>
+            <path d="M0 340 L120 300 L175 390 L145 480 H0Z"
+                  fill="#c7e2b8"/>
+            <path d="M420 350 L600 310 V480 H390Z"
+                  fill="#c7e2b8"/>
+
+            <!-- Jalan utama -->
+            <path d="M-20 220 L620 270"
+                  stroke="#ffffff" stroke-width="43" fill="none"/>
+            <path d="M-20 220 L620 270"
+                  stroke="#c5cbd0" stroke-width="2"
+                  stroke-dasharray="12 10" fill="none"/>
+
+            <path d="M300 -20 L260 500"
+                  stroke="#ffffff" stroke-width="39" fill="none"/>
+            <path d="M300 -20 L260 500"
+                  stroke="#c5cbd0" stroke-width="2"
+                  stroke-dasharray="12 10" fill="none"/>
+
+            <!-- Jalan lingkungan -->
+            <path d="M60 80 L510 410"
+                  stroke="#ffffff" stroke-width="19" fill="none"/>
+            <path d="M70 400 L520 70"
+                  stroke="#ffffff" stroke-width="18" fill="none"/>
+            <path d="M100 0 L110 480"
+                  stroke="#ffffff" stroke-width="14" fill="none"/>
+            <path d="M470 0 L440 480"
+                  stroke="#ffffff" stroke-width="14" fill="none"/>
+
+            <!-- Blok bangunan -->
+            <g fill="#d6dbe1" stroke="#b7c1ca" stroke-width="1.5">
+              <rect x="35" y="155" width="46" height="28" rx="3"/>
+              <rect x="125" y="150" width="64" height="34" rx="3"/>
+              <rect x="340" y="130" width="53" height="34" rx="3"/>
+              <rect x="395" y="180" width="42" height="25" rx="3"/>
+              <rect x="480" y="195" width="55" height="32" rx="3"/>
+
+              <rect x="35" y="285" width="50" height="32" rx="3"/>
+              <rect x="130" y="285" width="66" height="33" rx="3"/>
+              <rect x="330" y="310" width="55" height="31" rx="3"/>
+              <rect x="490" y="285" width="58" height="30" rx="3"/>
+
+              <rect x="160" y="40" width="54" height="29" rx="3"/>
+              <rect x="340" y="55" width="48" height="30" rx="3"/>
+              <rect x="160" y="410" width="57" height="29" rx="3"/>
+              <rect x="330" y="405" width="48" height="27" rx="3"/>
+            </g>
+
+            <!-- Area fasilitas -->
+            <rect x="450" y="45" width="82" height="45" rx="5"
+                  fill="#b9d8ef" stroke="#8db9d8" stroke-width="2"/>
+            <text x="491" y="64" font-size="10" text-anchor="middle"
+                  fill="#35617e">FASILITAS</text>
+            <text x="491" y="77" font-size="9" text-anchor="middle"
+                  fill="#35617e">UMUM</text>
+
+            <rect x="45" y="370" width="70" height="45" rx="5"
+                  fill="#b9d8ef" stroke="#8db9d8" stroke-width="2"/>
+            <text x="80" y="389" font-size="10" text-anchor="middle"
+                  fill="#35617e">AREA</text>
+            <text x="80" y="402" font-size="9" text-anchor="middle"
+                  fill="#35617e">LAYANAN</text>
+
+            <!-- Pohon dekoratif -->
+            <g fill="#8dbb7d">
+              <circle cx="40" cy="45" r="12"/>
+              <circle cx="65" cy="65" r="10"/>
+              <circle cx="555" cy="120" r="12"/>
+              <circle cx="570" cy="140" r="10"/>
+              <circle cx="165" cy="345" r="10"/>
+              <circle cx="185" cy="355" r="12"/>
+              <circle cx="545" cy="390" r="11"/>
+              <circle cx="565" cy="410" r="12"/>
+            </g>
+          </svg>
+
+          <span class="map-label" style="top:12%;left:18%">Taman Utara</span>
+          <span class="map-label" style="top:35%;left:68%">Zona A</span>
+          <span class="map-label" style="top:73%;left:33%">Zona B</span>
+          <span class="map-label small" style="top:52%;left:43%">Jalan Utama</span>
+        </div>
+
+        <div class="legend">
+          <span><i class="dot" style="background:#20a464"></i> Normal</span>
+          <span><i class="dot" style="background:#e44848"></i> Bermasalah</span>
+          <span>◎ Penanda aset interaktif</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <h3>Daftar Aset</h3>
+          <p>Pilih aset untuk melihat detailnya.</p>
+        </div>
+
+        <div class="asset-list" id="assetList"></div>
+
+        <div class="detail" id="detail">
+          <h4>Detail Aset</h4>
+          <p style="font-size:12px;color:#748094">
+            Pilih salah satu aset pada peta atau daftar aset.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      GIS Asset Monitoring · Proyek demonstrasi mahasiswa
+      <br>Seluruh wilayah dan data aset pada halaman ini bersifat fiktif.
+    </div>
+  </main>
+
+  <script>
+    // Data contoh. x dan y adalah posisi ilustrasi dalam persen,
+    // bukan koordinat geografis.
+    const assets = [
+      {
+        id: 1,
+        name: "Lampu Jalan A-01",
+        type: "Penerangan jalan",
+        status: "normal",
+        x: 19, y: 41,
+        condition: "Berfungsi dengan baik",
+        icon: "💡"
+      },
+      {
+        id: 2,
+        name: "CCTV B-02",
+        type: "Keamanan",
+        status: "problem",
+        x: 46, y: 26,
+        condition: "Kamera perlu diperiksa",
+        icon: "📹"
+      },
+      {
+        id: 3,
+        name: "Panel Listrik C-03",
+        type: "Kelistrikan",
+        status: "normal",
+        x: 66, y: 60,
+        condition: "Berfungsi dengan baik",
+        icon: "⚡"
+      },
+      {
+        id: 4,
+        name: "Pompa Air D-04",
+        type: "Pengairan",
+        status: "problem",
+        x: 79, y: 37,
+        condition: "Perlu perawatan",
+        icon: "💧"
+      },
+      {
+        id: 5,
+        name: "Tempat Sampah E-05",
+        type: "Kebersihan",
+        status: "normal",
+        x: 32, y: 76,
+        condition: "Kondisi baik",
+        icon: "🗑️"
+      }
+    ];
+
+    const map = document.getElementById("map");
+    const assetList = document.getElementById("assetList");
+    const detail = document.getElementById("detail");
+
+    function renderStats() {
+      document.getElementById("total").textContent = assets.length;
+      document.getElementById("normal").textContent =
+        assets.filter(a => a.status === "normal").length;
+      document.getElementById("problem").textContent =
+        assets.filter(a => a.status === "problem").length;
+    }
+
+    function showDetail(asset) {
+      detail.innerHTML = `
+        <h4>${asset.icon} ${asset.name}</h4>
+        <div class="detail-row">
+          <span>ID Aset</span><strong>AST-${String(asset.id).padStart(3,"0")}</strong>
+        </div>
+        <div class="detail-row">
+          <span>Jenis</span><strong>${asset.type}</strong>
+        </div>
+        <div class="detail-row">
+          <span>Status</span>
+          <strong class="${asset.status === "normal" ? "green-text" : "red-text"}">
+            ${asset.status === "normal" ? "Normal" : "Bermasalah"}
+          </strong>
+        </div>
+        <div class="detail-row">
+          <span>Kondisi</span><strong>${asset.condition}</strong>
+        </div>
+        <div class="detail-row">
+          <span>Lokasi</span><strong>Zona Demo ${asset.id}</strong>
+        </div>
+      `;
+
+      document.querySelectorAll(".asset").forEach(el => {
+        el.classList.toggle("selected", Number(el.dataset.id) === asset.id);
+      });
+    }
+
+    function renderAssets() {
+      assets.forEach(asset => {
+        // Membuat marker di atas ilustrasi peta
+        const marker = document.createElement("button");
+        marker.className = `marker ${asset.status}`;
+        marker.style.left = `${asset.x}%`;
+        marker.style.top = `${asset.y}%`;
+        marker.textContent = asset.id;
+        marker.title = asset.name;
+        marker.setAttribute("aria-label", `Lihat ${asset.name}`);
+        marker.addEventListener("click", () => showDetail(asset));
+        map.appendChild(marker);
+
+        // Membuat item pada daftar aset
+        const item = document.createElement("button");
+        item.className = "asset";
+        item.dataset.id = asset.id;
+
+        const statusText = asset.status === "normal"
+          ? "Normal"
+          : "Bermasalah";
+
+        item.innerHTML = `
+          <div class="asset-icon">${asset.icon}</div>
+          <div class="asset-info">
+            <strong>${asset.name}</strong>
+            <small>${asset.type}</small>
+          </div>
+          <span class="status ${asset.status}">${statusText}</span>
+        `;
+
+        item.addEventListener("click", () => showDetail(asset));
+        assetList.appendChild(item);
+      });
+    }
+
+    renderStats();
+    renderAssets();
+  </script>
+</body>
+</html>
