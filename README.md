@@ -1,8 +1,7 @@
 # Informatics-Practitioner-Lecture-Series
 Studi Kasus Informatics Practitioner Lecture Series 
 
-Materi 3
-# Graphic-Information-System
+# Materi 3 : Graphic-Information-System
 Demo Studi Kasus GIS
 
 1. Judul Proyek :
